@@ -1,0 +1,200 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id               Int               @id @default(autoincrement())
+  username         String            @unique
+  passwordHash     String
+  role             String            @default("hrd")
+  isActive         Boolean           @default(true)
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  contacts         Contact[]
+  templates        MessageTemplate[]
+  campaigns        Campaign[]
+  sendRuns         SendRun[]
+  outboundMessages OutboundMessage[]
+  inboundMessages  InboundMessage[]
+  auditLogs        AuditLog[]
+}
+
+model Contact {
+  id               Int                 @id @default(autoincrement())
+  userId           Int
+  user             User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name             String              @default("")
+  phone            String
+  team             String              @default("")
+  role             String              @default("")
+  tagsJson         String              @default("[]")
+  optedIn          Boolean             @default(true)
+  optedOut         Boolean             @default(false)
+  lastInboundAt    DateTime?
+  lastOutboundAt   DateTime?
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
+  campaignTargets  CampaignRecipient[]
+  outboundMessages OutboundMessage[]
+  inboundMessages  InboundMessage[]
+
+  @@unique([userId, phone])
+  @@index([userId])
+}
+
+model MessageTemplate {
+  id               Int               @id @default(autoincrement())
+  userId           Int
+  user             User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name             String
+  body             String
+  category         String            @default("reminder")
+  isActive         Boolean           @default(true)
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  outboundMessages OutboundMessage[]
+
+  @@index([userId])
+}
+
+model Campaign {
+  id               Int                 @id @default(autoincrement())
+  userId           Int
+  user             User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name             String
+  draft            String
+  cronExpression   String?
+  timezone         String              @default("Asia/Jakarta")
+  enabled          Boolean             @default(false)
+  status           String              @default("draft")
+  audienceTagsJson String              @default("[]")
+  lastRunAt        DateTime?
+  nextRunAt        DateTime?
+  failureStreak    Int                 @default(0)
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
+  recipients       CampaignRecipient[]
+  runs             SendRun[]
+  outboundMessages OutboundMessage[]
+  inboundMessages  InboundMessage[]
+
+  @@index([userId])
+  @@index([enabled, nextRunAt])
+}
+
+model CampaignRecipient {
+  id             Int       @id @default(autoincrement())
+  campaignId     Int
+  campaign       Campaign  @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  contactId      Int
+  contact        Contact   @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  status         String    @default("queued")
+  lastOutboundId Int?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@unique([campaignId, contactId])
+  @@index([contactId])
+}
+
+model SendRun {
+  id               Int               @id @default(autoincrement())
+  campaignId       Int
+  campaign         Campaign          @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  userId           Int
+  user             User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  source           String
+  status           String            @default("running")
+  dedupeKey        String            @unique
+  startedAt        DateTime          @default(now())
+  finishedAt       DateTime?
+  totalCount       Int               @default(0)
+  queuedCount      Int               @default(0)
+  skippedCount     Int               @default(0)
+  failedCount      Int               @default(0)
+  errorSummary     String?
+  outboundMessages OutboundMessage[]
+
+  @@index([campaignId])
+  @@index([userId])
+}
+
+model OutboundMessage {
+  id             Int              @id @default(autoincrement())
+  userId         Int
+  user           User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  contactId      Int
+  contact        Contact          @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  campaignId     Int?
+  campaign       Campaign?        @relation(fields: [campaignId], references: [id], onDelete: SetNull)
+  runId          Int?
+  run            SendRun?         @relation(fields: [runId], references: [id], onDelete: SetNull)
+  templateId     Int?
+  template       MessageTemplate? @relation(fields: [templateId], references: [id], onDelete: SetNull)
+  type           String           @default("broadcast")
+  text           String
+  status         String           @default("pending")
+  dedupeKey      String           @unique
+  attemptCount   Int              @default(0)
+  maxAttempts    Int              @default(2)
+  nextAttemptAt  DateTime         @default(now())
+  lockedAt       DateTime?
+  sentAt         DateTime?
+  failedAt       DateTime?
+  error          String?
+  wahaMessageId  String?
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  @@index([status, nextAttemptAt])
+  @@index([userId])
+  @@index([contactId])
+  @@index([campaignId])
+}
+
+model InboundMessage {
+  id            Int       @id @default(autoincrement())
+  userId        Int
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  contactId     Int
+  contact       Contact   @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  campaignId    Int?
+  campaign      Campaign? @relation(fields: [campaignId], references: [id], onDelete: SetNull)
+  wahaMessageId String    @unique
+  chatId        String
+  text          String
+  receivedAt    DateTime  @default(now())
+  readAt        DateTime?
+  createdAt     DateTime  @default(now())
+
+  @@index([userId, receivedAt])
+  @@index([contactId])
+  @@index([campaignId])
+}
+
+model WahaSendLock {
+  key         String    @id
+  owner       String?
+  lockedUntil DateTime?
+  updatedAt   DateTime  @updatedAt
+}
+
+model AuditLog {
+  id         Int      @id @default(autoincrement())
+  userId     Int?
+  user       User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  level      String   @default("info")
+  entityType String   @default("system")
+  entityId   Int?
+  action     String
+  message    String
+  createdAt  DateTime @default(now())
+
+  @@index([userId, createdAt])
+  @@index([level, createdAt])
+}
