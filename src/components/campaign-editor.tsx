@@ -25,7 +25,7 @@ type FormState = {
 
 const defaultForm: FormState = {
   name: "",
-  draft: "Halo {name}, reminder {campaignName}. Mohon balas pesan ini jika sudah ditindaklanjuti.\n\n- {senderName}",
+  draft: "Halo {firstName}, {pagi_siang_sore}. Reminder {campaignName}. Mohon balas pesan ini jika sudah ditindaklanjuti.\n\n- {senderName}",
   cronExpression: "0 8 * * *",
   timezone: "Asia/Jakarta",
   enabled: false,
@@ -33,7 +33,7 @@ const defaultForm: FormState = {
   audienceTags: [],
 };
 
-export function CampaignEditor({ campaignId }: { campaignId?: number }) {
+export function CampaignEditor({ campaignId, currentUser }: { campaignId?: number; currentUser: string }) {
   const router = useRouter();
   const [form, setForm] = useState<FormState>(defaultForm);
   const [contacts, setContacts] = useState<Contact[]>([]);
@@ -75,14 +75,36 @@ export function CampaignEditor({ campaignId }: { campaignId?: number }) {
   const firstContact = selectedContacts[0] || contacts[0];
   const preview = useMemo(() => {
     if (!firstContact) return form.draft;
+
+    const now = new Date();
+    const hour = now.getHours();
+    let salutation = "Selamat Malam";
+    if (hour >= 3 && hour < 11) salutation = "Selamat Pagi";
+    else if (hour >= 11 && hour < 15) salutation = "Selamat Siang";
+    else if (hour >= 15 && hour < 18) salutation = "Selamat Sore";
+
+    const name = firstContact.name || "Rekan";
+    const firstName = name.split(" ")[0];
+
+    const dateStr = new Intl.DateTimeFormat("id-ID", { dateStyle: "long" }).format(now);
+    const timeStr = new Intl.DateTimeFormat("id-ID", { timeStyle: "short" }).format(now);
+    const dayStr = new Intl.DateTimeFormat("id-ID", { weekday: "long" }).format(now);
+
     return form.draft
-      .replaceAll("{name}", firstContact.name || "Rekan")
+      .replaceAll("{name}", name)
+      .replaceAll("{firstName}", firstName)
       .replaceAll("{phone}", firstContact.phone.replace("@c.us", ""))
       .replaceAll("{team}", firstContact.team || "-")
       .replaceAll("{role}", firstContact.role || "-")
       .replaceAll("{campaignName}", form.name || "Campaign")
-      .replaceAll("{senderName}", "user");
-  }, [form.draft, form.name, firstContact]);
+      .replaceAll("{senderName}", currentUser)
+      .replaceAll("{date}", dateStr)
+      .replaceAll("{time}", timeStr)
+      .replaceAll("{datetime}", `${dateStr} ${timeStr}`)
+      .replaceAll("{day}", dayStr)
+      .replaceAll("{salutation}", salutation)
+      .replaceAll("{pagi_siang_sore}", salutation);
+  }, [form.draft, form.name, firstContact, currentUser]);
 
   function toggleContact(contactId: number) {
     setForm((current) => ({
@@ -197,7 +219,7 @@ export function CampaignEditor({ campaignId }: { campaignId?: number }) {
                   </select>
                 </div>
                 <Textarea rows={8} value={form.draft} onChange={(event) => setForm({ ...form, draft: event.target.value })} />
-                <p className="text-xs text-muted-foreground">Placeholder: {"{name}"}, {"{phone}"}, {"{team}"}, {"{role}"}, {"{campaignName}"}, {"{senderName}"}, {"{date}"}, {"{datetime}"}.</p>
+                <p className="text-xs text-muted-foreground">Placeholder: {"{name}"}, {"{firstName}"}, {"{phone}"}, {"{team}"}, {"{role}"}, {"{campaignName}"}, {"{senderName}"}, {"{date}"}, {"{time}"}, {"{datetime}"}, {"{day}"}, {"{pagi_siang_sore}"}.</p>
               </div>
             </CardContent>
           </Card>
@@ -233,8 +255,8 @@ export function CampaignEditor({ campaignId }: { campaignId?: number }) {
               <CardTitle>Penerima</CardTitle>
               {contacts.length > 0 && (
                 <label className="flex cursor-pointer items-center gap-2 text-sm font-normal">
-                  <input 
-                    type="checkbox" 
+                  <input
+                    type="checkbox"
                     checked={(() => {
                       const selectableIds = contacts.filter((c) => c.optedIn && !c.optedOut).map((c) => c.id);
                       return selectableIds.length > 0 && selectableIds.every((id) => form.contactIds.includes(id));
@@ -279,7 +301,7 @@ export function CampaignEditor({ campaignId }: { campaignId?: number }) {
                 </div>
                 <div className="rounded-md bg-muted p-3">
                   <p className="text-muted-foreground">Guardrail</p>
-                  <p className="mt-1 font-semibold">45-90s delay</p>
+                  <p className="mt-1 font-semibold">30-60s delay</p>
                 </div>
               </div>
               <div className="rounded-md border bg-background p-3">

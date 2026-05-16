@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 
 type Template = { id: number; name: string; body: string; category: string; isActive: boolean };
-const empty = { id: 0, name: "", body: "Halo {name}, reminder {campaignName}.\n\n- {senderName}", category: "reminder", isActive: true };
+const empty = { id: 0, name: "", body: "Halo {firstName}, {pagi_siang_sore}.\nReminder {campaignName} untuk hari {day}, {date}.\n\n- {senderName}", category: "reminder", isActive: true };
 
 export function TemplatesClient() {
   const [templates, setTemplates] = useState<Template[]>([]);
@@ -100,7 +100,7 @@ export function TemplatesClient() {
                     <p className="font-medium text-foreground">{template.name}</p>
                     <p className="mt-1 line-clamp-2 whitespace-pre-wrap text-sm text-muted-foreground">{template.body}</p>
                   </button>
-                  <Badge className="w-fit" variant={template.isActive ? "success" : "muted"}>{template.category}</Badge>
+                  <Badge className="w-20 h-20 justify-center text-center" variant={template.isActive ? "success" : "muted"}>{template.category}</Badge>
                   <Button variant="outline" size="icon" onClick={() => remove(template)}>
                     <Trash2 className="h-4 w-4" />
                   </Button>

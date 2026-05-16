@@ -26,7 +26,7 @@ type Thread = {
 };
 type Template = { id: number; name: string; body: string; category: string };
 
-export function InboxClient() {
+export function InboxClient({ currentUser }: { currentUser: string }) {
   const [threads, setThreads] = useState<Thread[]>([]);
   const [templates, setTemplates] = useState<Template[]>([]);
   const [selectedId, setSelectedId] = useState<number | null>(null);
@@ -61,14 +61,37 @@ export function InboxClient() {
   function applyTemplate(templateId: string) {
     const template = templates.find((item) => item.id === Number(templateId));
     if (!template || !selected) return;
+
+    const now = new Date();
+    const hour = now.getHours();
+    let salutation = "Selamat Malam";
+    if (hour >= 3 && hour < 11) salutation = "Selamat Pagi";
+    else if (hour >= 11 && hour < 15) salutation = "Selamat Siang";
+    else if (hour >= 15 && hour < 18) salutation = "Selamat Sore";
+
+    const name = selected.contact.name || "Rekan";
+    const firstName = name.split(" ")[0];
+
+    const dateStr = new Intl.DateTimeFormat("id-ID", { dateStyle: "long" }).format(now);
+    const timeStr = new Intl.DateTimeFormat("id-ID", { timeStyle: "short" }).format(now);
+    const datetimeStr = `${dateStr} ${timeStr}`;
+    const dayStr = new Intl.DateTimeFormat("id-ID", { weekday: "long" }).format(now);
+
     setReply(
       template.body
-        .replaceAll("{name}", selected.contact.name || "Rekan")
+        .replaceAll("{name}", name)
+        .replaceAll("{firstName}", firstName)
         .replaceAll("{phone}", selected.contact.phone.replace("@c.us", ""))
         .replaceAll("{team}", selected.contact.team || "-")
         .replaceAll("{role}", selected.contact.role || "-")
         .replaceAll("{campaignName}", selected.lastMessage?.campaign?.name || "follow-up")
-        .replaceAll("{senderName}", "user")
+        .replaceAll("{senderName}", currentUser)
+        .replaceAll("{date}", dateStr)
+        .replaceAll("{time}", timeStr)
+        .replaceAll("{datetime}", datetimeStr)
+        .replaceAll("{day}", dayStr)
+        .replaceAll("{salutation}", salutation)
+        .replaceAll("{pagi_siang_sore}", salutation)
     );
   }
 
