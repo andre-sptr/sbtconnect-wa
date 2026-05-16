@@ -12,7 +12,7 @@ import {
   todayStartJakarta,
 } from "@/lib/safety";
 import { renderMessageTemplate, templateHash } from "@/lib/template-utils";
-import { sendWahaText } from "@/lib/waha";
+import { sendWahaText, resolvePhoneFromLid } from "@/lib/waha";
 
 export function parseJsonArray(value?: string | null) {
   if (!value) return [] as string[];
@@ -507,8 +507,28 @@ export async function handleWahaInbound(payload: WahaWebhookPayload) {
     }
   }
 
+  // 4. LID Resolution: Call WAHA API to resolve LID to phone number
+  if (!contact && normalizedPhone.endsWith("@lid")) {
+    const resolvedPhone = await resolvePhoneFromLid(normalizedPhone);
+    if (resolvedPhone) {
+      contact = await prisma.contact.findFirst({
+        where: { phone: resolvedPhone },
+        orderBy: { lastOutboundAt: "desc" },
+      });
+
+      if (contact) {
+        await writeAudit({
+          level: "info",
+          entityType: "inbound",
+          action: "lid_resolved_to_phone",
+          message: `Berhasil resolve LID ${normalizedPhone} → ${resolvedPhone}, matched kontak "${contact.name}"`,
+        });
+      }
+    }
+  }
+
   if (!contact) {
-    // 4. Last Resort: Auto-create contact for unknown sender
+    // 5. Last Resort: Auto-create contact for unknown sender
     contact = await prisma.contact.create({
       data: {
         userId: recentOutbound?.userId || 1, // Default to first user if unknown
