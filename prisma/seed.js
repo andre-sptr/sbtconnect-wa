@@ -22,26 +22,33 @@ async function main() {
   const hrd = seededUsers.get("hrd");
   const manager = seededUsers.get("atasan");
 
-  const templates = [
-    {
-      userId: hrd.id,
-      name: "Reminder Absensi",
-      body: "Halo {name}, mohon lengkapi absensi hari ini sebelum pukul 17.00. Terima kasih.\n\n- {senderName}",
-      category: "reminder",
-    },
-    {
+  const templates = [];
+
+  if (hrd) {
+    templates.push(
+      {
+        userId: hrd.id,
+        name: "Reminder Absensi",
+        body: "Halo {name}, mohon lengkapi absensi hari ini sebelum pukul 17.00. Terima kasih.\n\n- {senderName}",
+        category: "reminder",
+      },
+      {
+        userId: hrd.id,
+        name: "Quick Reply Terima Kasih",
+        body: "Terima kasih infonya, {name}. Kami catat ya.",
+        category: "reply",
+      }
+    );
+  }
+
+  if (manager) {
+    templates.push({
       userId: manager.id,
       name: "Follow-up Tugas",
       body: "Halo {name}, reminder untuk progress {campaignName}. Jika ada kendala, mohon balas pesan ini.\n\n- {senderName}",
       category: "follow-up",
-    },
-    {
-      userId: hrd.id,
-      name: "Quick Reply Terima Kasih",
-      body: "Terima kasih infonya, {name}. Kami catat ya.",
-      category: "reply",
-    },
-  ];
+    });
+  }
 
   for (const template of templates) {
     const existing = await prisma.messageTemplate.findFirst({

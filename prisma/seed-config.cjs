@@ -4,19 +4,13 @@ const SEED_ACCOUNT_DEFINITIONS = [
   { key: "atasan", role: "manager", usernameEnv: "ATASAN_USERNAME", passwordEnv: "ATASAN_PASSWORD" },
 ];
 
-function requiredEnv(env, name) {
-  const value = env[name]?.trim();
-  if (!value) throw new Error(`${name} must be configured in .env.`);
-  return value;
-}
-
 function getSeedAccounts(env = process.env) {
   return SEED_ACCOUNT_DEFINITIONS.map((definition) => ({
     key: definition.key,
     role: definition.role,
-    username: requiredEnv(env, definition.usernameEnv),
-    password: requiredEnv(env, definition.passwordEnv),
-  }));
+    username: env[definition.usernameEnv]?.trim(),
+    password: env[definition.passwordEnv]?.trim(),
+  })).filter((acc) => acc.username && acc.password);
 }
 
 module.exports = { getSeedAccounts };

@@ -15,8 +15,8 @@ export function getWebhookToken() {
 export function publicGuardrailConfig() {
   return {
     dailyCap: 80,
-    minDelaySeconds: 45,
-    maxDelaySeconds: 90,
+    minDelaySeconds: 30,
+    maxDelaySeconds: 60,
     quietHours: "22:00-06:00 Asia/Jakarta",
     sessionMode: "single",
   };

@@ -29,7 +29,7 @@ export function ContactsClient() {
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [q, setQ] = useState("");
   const [form, setForm] = useState(emptyForm);
-  const [importText, setImportText] = useState("name,phone,team,role,tags,optIn\nAni,081234567890,People,Staff,onboarding,true");
+  const [importText, setImportText] = useState("name,phone,team,role,tags,optIn\nAndre,081234567890,People,Staff,onboarding,true");
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
@@ -159,7 +159,7 @@ export function ContactsClient() {
               <form className="space-y-3" onSubmit={save}>
                 <div className="space-y-1">
                   <Label>Nama</Label>
-                  <Input value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} placeholder="Ani" />
+                  <Input value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} placeholder="Andre" />
                 </div>
                 <div className="space-y-1">
                   <Label>Nomor WA</Label>
@@ -181,11 +181,25 @@ export function ContactsClient() {
                 </div>
                 <div className="flex gap-4 text-sm">
                   <label className="flex items-center gap-2">
-                    <input type="checkbox" checked={form.optedIn} onChange={(event) => setForm({ ...form, optedIn: event.target.checked })} />
+                    <input 
+                      type="checkbox" 
+                      checked={form.optedIn} 
+                      onChange={(event) => {
+                        const isChecked = event.target.checked;
+                        setForm({ ...form, optedIn: isChecked, optedOut: isChecked ? false : form.optedOut });
+                      }} 
+                    />
                     Opt-in
                   </label>
                   <label className="flex items-center gap-2">
-                    <input type="checkbox" checked={form.optedOut} onChange={(event) => setForm({ ...form, optedOut: event.target.checked })} />
+                    <input 
+                      type="checkbox" 
+                      checked={form.optedOut} 
+                      onChange={(event) => {
+                        const isChecked = event.target.checked;
+                        setForm({ ...form, optedOut: isChecked, optedIn: isChecked ? false : form.optedIn });
+                      }} 
+                    />
                     Opt-out
                   </label>
                 </div>
