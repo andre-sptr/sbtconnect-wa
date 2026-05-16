@@ -62,16 +62,53 @@ export function LogsClient() {
               <option value="success">Success</option>
             </select>
           </div>
-          <div className="divide-y rounded-md border">
-            {logs.length === 0 ? <p className="p-4 text-sm text-muted-foreground">Belum ada log.</p> : null}
-            {logs.map((log) => (
-              <div key={log.id} className="grid gap-3 p-4 lg:grid-cols-[160px_100px_120px_minmax(0,1fr)]">
-                <p className="text-sm text-muted-foreground">{formatDateTime(log.createdAt)}</p>
-                <Badge className="w-fit capitalize" variant={variant(log.level)}>{log.level}</Badge>
-                <p className="text-sm text-muted-foreground">{log.entityType}/{log.action}</p>
-                <p className="whitespace-pre-wrap text-sm text-foreground [overflow-wrap:anywhere]">{log.message}</p>
-              </div>
-            ))}
+          <div className="rounded-md border overflow-hidden">
+            {/* Table Header */}
+            <div className="hidden lg:grid grid-cols-[160px_100px_180px_1fr] border-b bg-muted/30 px-4 py-2 text-xs font-medium uppercase tracking-wider text-muted-foreground">
+              <div className="text-left">Time</div>
+              <div className="text-center">Level</div>
+              <div className="text-center">Event</div>
+              <div className="text-center">Message</div>
+            </div>
+
+            <div className="divide-y">
+              {logs.length === 0 ? (
+                <div className="flex h-32 items-center justify-center text-sm text-muted-foreground">
+                  Belum ada log.
+                </div>
+              ) : null}
+              {logs.map((log) => (
+                <div
+                  key={log.id}
+                  className="grid gap-3 p-4 hover:bg-muted/30 transition-colors lg:grid-cols-[160px_100px_180px_minmax(0,1fr)] lg:items-center"
+                >
+                  <div className="text-[13px] font-medium text-muted-foreground">
+                    {formatDateTime(log.createdAt)}
+                  </div>
+                  <div className="flex items-center">
+                    <Badge
+                      className="w-16 justify-center text-[11px] font-bold uppercase tracking-tighter"
+                      variant={variant(log.level) as any}
+                    >
+                      {log.level}
+                    </Badge>
+                  </div>
+                  <div className="flex flex-col gap-0.5">
+                    <span className="text-[13px] font-semibold text-foreground uppercase tracking-tight">
+                      {log.entityType}
+                    </span>
+                    <span className="text-[11px] font-mono text-muted-foreground italic">
+                      {log.action}
+                    </span>
+                  </div>
+                  <div className="text-[13px] leading-relaxed text-foreground/90">
+                    <p className="whitespace-pre-wrap [overflow-wrap:anywhere]">
+                      {log.message}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         </CardContent>
       </Card>
