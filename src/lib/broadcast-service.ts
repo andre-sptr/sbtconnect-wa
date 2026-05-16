@@ -459,11 +459,56 @@ export async function handleWahaInbound(payload: WahaWebhookPayload) {
     orderBy: [{ sentAt: "desc" }, { createdAt: "desc" }],
     include: { contact: true },
   });
+  // 1. Try to find contact by ID (LID or Phone)
   let contact = recentOutbound?.contact ||
     (await prisma.contact.findFirst({ where: { phone: normalizedPhone }, orderBy: { lastOutboundAt: "desc" } }));
 
+  // 2. Ultimate Match: Check if this is a reply to one of our outbound messages
   if (!contact) {
-    // Auto-create contact for unknown sender so the message is not lost
+    const quotedMsgId = (payload.payload as any)?.quotedMsg?.id?._serialized || (payload.payload as any)?._data?.quotedStanzaID;
+    if (quotedMsgId) {
+      const originalMessage = await prisma.outboundMessage.findFirst({
+        where: { wahaMessageId: quotedMsgId },
+        include: { contact: true }
+      });
+
+      if (originalMessage?.contact) {
+        contact = originalMessage.contact;
+        await writeAudit({
+          level: "info",
+          entityType: "inbound",
+          action: "reply_match_linked",
+          message: `Berhasil mengidentifikasi LID ${normalizedPhone} sebagai "${contact.name}" karena membalas pesan yang dikirim ke nomor tersebut.`,
+        });
+      }
+    }
+  }
+
+  // 3. Smart Match Fallback: If still not found and it's an LID, try to match by Notify Name
+  if (!contact) {
+    const notifyName = (payload.payload as any)?._data?.notifyName || (payload.payload as any)?.notifyName;
+    if (notifyName) {
+      contact = await prisma.contact.findFirst({
+        where: { 
+          name: { contains: notifyName }, // Case-insensitive partial match
+          userId: recentOutbound?.userId || 1 
+        },
+        orderBy: { updatedAt: "desc" }
+      });
+
+      if (contact) {
+        await writeAudit({
+          level: "info",
+          entityType: "inbound",
+          action: "smart_match_linked",
+          message: `Berhasil mencocokkan LID ${normalizedPhone} ke kontak "${contact.name}" berdasarkan nama WhatsApp.`,
+        });
+      }
+    }
+  }
+
+  if (!contact) {
+    // 4. Last Resort: Auto-create contact for unknown sender
     contact = await prisma.contact.create({
       data: {
         userId: recentOutbound?.userId || 1, // Default to first user if unknown
