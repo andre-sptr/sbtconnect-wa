@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Download, Plus, RefreshCw, Search, Trash2, Upload } from "lucide-react";
+import { Download, Plus, RefreshCw, Search, Trash2, Upload, ArrowDownLeft, ArrowUpRight, Edit2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -234,21 +234,43 @@ export function ContactsClient() {
               {loading ? <p className="p-4 text-sm text-muted-foreground">Memuat kontak...</p> : null}
               {!loading && contacts.length === 0 ? <p className="p-4 text-sm text-muted-foreground">Belum ada kontak.</p> : null}
               {contacts.map((contact) => (
-                <div key={contact.id} className="grid gap-3 p-4 lg:grid-cols-[minmax(0,1fr)_180px_96px]">
-                  <button type="button" className="min-w-0 text-left" onClick={() => edit(contact)}>
-                    <p className="font-medium text-foreground">{contact.name || contact.phone}</p>
-                    <p className="text-sm text-muted-foreground">{contact.phone} · {contact.team || "-"} · {contact.role || "-"}</p>
-                    <div className="mt-2 flex flex-wrap gap-1">
-                      {contact.tags.map((tag) => <Badge key={tag} variant="muted">{tag}</Badge>)}
+                <div key={contact.id} className="group flex flex-col gap-4 p-4 transition-colors hover:bg-muted/30 sm:flex-row sm:items-center">
+                  <div 
+                    className="min-w-0 flex-1 cursor-pointer" 
+                    onClick={() => edit(contact)}
+                  >
+                    <div className="mb-1 flex items-center gap-2">
+                      <p className="truncate font-semibold text-foreground">{contact.name || contact.phone}</p>
+                      <Badge variant={contact.optedOut ? "destructive" : contact.optedIn ? "success" : "warning"} className="text-[10px] font-medium">
+                        {contact.optedOut ? "Opt-out" : contact.optedIn ? "Opt-in" : "No opt-in"}
+                      </Badge>
                     </div>
-                  </button>
-                  <div className="text-xs text-muted-foreground">
-                    <p>In: {formatDateTime(contact.lastInboundAt)}</p>
-                    <p>Out: {formatDateTime(contact.lastOutboundAt)}</p>
+                    <p className="truncate text-sm text-muted-foreground">
+                      {contact.phone} {contact.team ? `· ${contact.team}` : ""} {contact.role ? `· ${contact.role}` : ""}
+                    </p>
+                    {contact.tags.length > 0 && (
+                      <div className="mt-2 flex flex-wrap gap-1">
+                        {contact.tags.map((tag) => <Badge key={tag} variant="muted" className="text-xs font-normal">{tag}</Badge>)}
+                      </div>
+                    )}
                   </div>
-                  <div className="flex items-start justify-between gap-2 lg:justify-end">
-                    <Badge variant={contact.optedOut ? "destructive" : contact.optedIn ? "success" : "warning"}>{contact.optedOut ? "Opt-out" : contact.optedIn ? "Opt-in" : "No opt-in"}</Badge>
-                    <Button variant="outline" size="icon" onClick={() => remove(contact)}>
+                  
+                  <div className="flex items-center gap-4 text-xs text-muted-foreground sm:flex-col sm:items-end sm:gap-1.5">
+                    <div className="flex items-center gap-1.5" title="Terakhir Pesan Masuk">
+                      <ArrowDownLeft className="h-3.5 w-3.5 text-green-500" />
+                      <span className="w-24 text-left sm:text-right">{formatDateTime(contact.lastInboundAt)}</span>
+                    </div>
+                    <div className="flex items-center gap-1.5" title="Terakhir Pesan Keluar">
+                      <ArrowUpRight className="h-3.5 w-3.5 text-blue-500" />
+                      <span className="w-24 text-left sm:text-right">{formatDateTime(contact.lastOutboundAt)}</span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2 pt-2 sm:pt-0">
+                    <Button variant="ghost" size="icon" onClick={() => edit(contact)} className="h-8 w-8 text-muted-foreground opacity-100 transition-opacity hover:text-foreground sm:opacity-0 sm:group-hover:opacity-100">
+                      <Edit2 className="h-4 w-4" />
+                    </Button>
+                    <Button variant="ghost" size="icon" onClick={() => remove(contact)} className="h-8 w-8 text-destructive opacity-100 transition-opacity hover:bg-destructive/10 hover:text-destructive sm:opacity-0 sm:group-hover:opacity-100">
                       <Trash2 className="h-4 w-4" />
                     </Button>
                   </div>
