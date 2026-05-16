@@ -427,6 +427,14 @@ function isOptOutText(text: string) {
 }
 
 export async function handleWahaInbound(payload: WahaWebhookPayload) {
+  if (payload.event) {
+    await writeAudit({
+      level: "info",
+      entityType: "system",
+      action: "webhook_received",
+      message: `WAHA Webhook: ${payload.event} for session ${ (payload as any).session || "unknown" }`,
+    });
+  }
   if (!payload.event?.startsWith("message")) return { ok: true, skipped: true };
   const message = payload.payload;
   const text = message?.body?.trim();

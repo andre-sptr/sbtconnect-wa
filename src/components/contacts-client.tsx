@@ -239,20 +239,20 @@ export function ContactsClient() {
                     className="min-w-0 flex-1 cursor-pointer" 
                     onClick={() => edit(contact)}
                   >
-                    <div className="mb-1 flex items-center gap-2">
+                    <div className="mb-1 flex flex-wrap items-center gap-2">
                       <p className="truncate font-semibold text-foreground">{contact.name || contact.phone}</p>
                       <Badge variant={contact.optedOut ? "destructive" : contact.optedIn ? "success" : "warning"} className="text-[10px] font-medium">
                         {contact.optedOut ? "Opt-out" : contact.optedIn ? "Opt-in" : "No opt-in"}
                       </Badge>
+                      {contact.tags.map((tag) => (
+                        <Badge key={tag} variant="muted" className="text-[10px] font-normal">
+                          {tag}
+                        </Badge>
+                      ))}
                     </div>
                     <p className="truncate text-sm text-muted-foreground">
                       {contact.phone} {contact.team ? `· ${contact.team}` : ""} {contact.role ? `· ${contact.role}` : ""}
                     </p>
-                    {contact.tags.length > 0 && (
-                      <div className="mt-2 flex flex-wrap gap-1">
-                        {contact.tags.map((tag) => <Badge key={tag} variant="muted" className="text-xs font-normal">{tag}</Badge>)}
-                      </div>
-                    )}
                   </div>
                   
                   <div className="flex items-center gap-4 text-xs text-muted-foreground sm:flex-col sm:items-end sm:gap-1.5">

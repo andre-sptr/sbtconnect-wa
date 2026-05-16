@@ -93,6 +93,23 @@ export function CampaignEditor({ campaignId }: { campaignId?: number }) {
     }));
   }
 
+  function toggleAll() {
+    const selectableIds = contacts.filter((c) => c.optedIn && !c.optedOut).map((c) => c.id);
+    const allSelected = selectableIds.length > 0 && selectableIds.every((id) => form.contactIds.includes(id));
+
+    if (allSelected) {
+      setForm((current) => ({
+        ...current,
+        contactIds: current.contactIds.filter((id) => !selectableIds.includes(id)),
+      }));
+    } else {
+      setForm((current) => ({
+        ...current,
+        contactIds: Array.from(new Set([...current.contactIds, ...selectableIds])),
+      }));
+    }
+  }
+
   async function save() {
     setSaving(true);
     setError("");
@@ -212,8 +229,21 @@ export function CampaignEditor({ campaignId }: { campaignId?: number }) {
           </Card>
 
           <Card>
-            <CardHeader>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 py-4">
               <CardTitle>Penerima</CardTitle>
+              {contacts.length > 0 && (
+                <label className="flex cursor-pointer items-center gap-2 text-sm font-normal">
+                  <input 
+                    type="checkbox" 
+                    checked={(() => {
+                      const selectableIds = contacts.filter((c) => c.optedIn && !c.optedOut).map((c) => c.id);
+                      return selectableIds.length > 0 && selectableIds.every((id) => form.contactIds.includes(id));
+                    })()}
+                    onChange={toggleAll}
+                  />
+                  Pilih Semua
+                </label>
+              )}
             </CardHeader>
             <CardContent>
               <div className="max-h-[460px] divide-y overflow-y-auto rounded-md border">
