@@ -28,26 +28,52 @@ async function main() {
     templates.push(
       {
         userId: hrd.id,
+        name: "Sapaan Pagi (Greeting)",
+        body: "Halo {firstName}, {pagi_siang_sore}. Saya {senderName} dari HRD ingin menyapa rekan-rekan semua. Semoga hari ini menyenangkan!",
+        category: "greeting",
+      },
+      {
+        userId: hrd.id,
         name: "Reminder Absensi",
-        body: "Halo {name}, mohon lengkapi absensi hari ini sebelum pukul 17.00. Terima kasih.\n\n- {senderName}",
+        body: "Halo {firstName}, {pagi_siang_sore}. Mohon jangan lupa lengkapi absensi {day}, {date} sebelum pukul 17.00 ya. Terima kasih.\n\n- {senderName}",
         category: "reminder",
       },
       {
         userId: hrd.id,
+        name: "Permintaan Feedback",
+        body: "Halo {firstName}, apakah ada kendala dalam pekerjaan hari ini? Mohon berikan feedback singkat untuk kami tindaklanjuti.",
+        category: "survey",
+      },
+      {
+        userId: hrd.id,
         name: "Quick Reply Terima Kasih",
-        body: "Terima kasih infonya, {name}. Kami catat ya.",
+        body: "Sama-sama {firstName}, senang bisa membantu. Have a great {day}!",
         category: "reply",
       }
     );
   }
 
   if (manager) {
-    templates.push({
-      userId: manager.id,
-      name: "Follow-up Tugas",
-      body: "Halo {name}, reminder untuk progress {campaignName}. Jika ada kendala, mohon balas pesan ini.\n\n- {senderName}",
-      category: "follow-up",
-    });
+    templates.push(
+      {
+        userId: manager.id,
+        name: "Follow-up Tugas",
+        body: "Halo {firstName}, {pagi_siang_sore}. Izin follow-up progress {campaignName}. Jika ada kendala, mohon segera kabari saya ya.\n\n- {senderName}",
+        category: "follow-up",
+      },
+      {
+        userId: manager.id,
+        name: "Reminder Rapat",
+        body: "Halo {firstName}, diingatkan kembali ada rapat {campaignName} pada pukul {time} hari ini. Dimohon hadir tepat waktu.",
+        category: "reminder",
+      },
+      {
+        userId: manager.id,
+        name: "Quick Reply Sedang Rapat",
+        body: "Halo {firstName}, maaf saya sedang ada agenda. Nanti saya hubungi kembali ya. Terima kasih.",
+        category: "reply",
+      }
+    );
   }
 
   for (const template of templates) {
