@@ -23,17 +23,28 @@ function cleanPhoneInput(value: string) {
 export function normalizeWhatsappNumber(input: string): string | null {
   const raw = cleanPhoneInput(input);
   if (!raw) return null;
-  if (/[a-z]/i.test(raw.replace(/@c\.us$/i, ""))) return null;
 
-  const withoutSuffix = raw.replace(/@c\.us$/i, "");
-  let digits = withoutSuffix.replace(/[^\d]/g, "");
+  // If it already has a suffix, trust it as a valid WhatsApp ID
+  if (raw.endsWith("@c.us") || raw.endsWith("@lid") || raw.endsWith("@g.us")) {
+    return raw.toLowerCase();
+  }
+
+  // Otherwise, treat as a phone number and normalize to @c.us
+  let digits = raw.replace(/[^\d]/g, "");
   if (!digits) return null;
 
   if (digits.startsWith("00")) digits = digits.slice(2);
   if (digits.startsWith("0")) digits = `62${digits.slice(1)}`;
   if (digits.startsWith("8")) digits = `62${digits}`;
 
-  if (!digits.startsWith("62")) return null;
+  if (!digits.startsWith("62")) {
+    // If it doesn't start with 62 but is long enough, it might be an international number
+    if (digits.length >= 10 && digits.length <= 15) {
+      return `${digits}@c.us`;
+    }
+    return null;
+  }
+  
   if (digits.length < 10 || digits.length > 15) return null;
 
   return `${digits}@c.us`;

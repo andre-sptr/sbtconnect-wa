@@ -435,13 +435,21 @@ export async function handleWahaInbound(payload: WahaWebhookPayload) {
       message: `WAHA Webhook: ${payload.event} for session ${ (payload as any).session || "unknown" }`,
     });
   }
-  if (!payload.event?.startsWith("message")) return { ok: true, skipped: true };
-  const message = payload.payload;
-  const text = message?.body?.trim();
-  const chatId = message?.id?.remote || message?.from || "";
-  const fromMe = message?.id?.fromMe ?? message?.fromMe ?? false;
-  const wahaMessageId = message?.id?._serialized || `${chatId}:${Date.now()}`;
-  if (!text || !chatId || fromMe) return { ok: true, skipped: true };
+  if (!payload.event?.startsWith("message")) return { ok: true, skipped: true, reason: `event_${payload.event}_not_a_message` };
+  
+  // WAHA sends payload in 'payload' field, but some events might have it differently
+  const message = payload.payload || (payload.event === "message" ? payload : null);
+  if (!message) return { ok: true, skipped: true, reason: "missing_payload" };
+
+  const msg = message as any;
+  const text = (msg.body || msg.text || "").trim();
+  const chatId = msg.id?.remote || msg.from || msg.chatId || "";
+  const fromMe = msg.id?.fromMe ?? msg.fromMe ?? false;
+  const wahaMessageId = msg.id?._serialized || msg.id?.id || msg.id || `${chatId}:${Date.now()}`;
+
+  if (fromMe) return { ok: true, skipped: true, reason: "from_me" };
+  if (!text) return { ok: true, skipped: true, reason: "empty_text" };
+  if (!chatId) return { ok: true, skipped: true, reason: "missing_chat_id" };
 
   const normalizedPhone = normalizeWhatsappNumber(chatId);
   if (!normalizedPhone) return { ok: false, error: "Invalid inbound chat id" };
@@ -451,18 +459,27 @@ export async function handleWahaInbound(payload: WahaWebhookPayload) {
     orderBy: [{ sentAt: "desc" }, { createdAt: "desc" }],
     include: { contact: true },
   });
-  const contact =
-    recentOutbound?.contact ||
+  let contact = recentOutbound?.contact ||
     (await prisma.contact.findFirst({ where: { phone: normalizedPhone }, orderBy: { lastOutboundAt: "desc" } }));
 
   if (!contact) {
-    await writeAudit({
-      level: "warning",
-      entityType: "inbound",
-      action: "unmatched",
-      message: `Inbound dari ${normalizedPhone} tidak cocok dengan kontak manapun.`,
+    // Auto-create contact for unknown sender so the message is not lost
+    contact = await prisma.contact.create({
+      data: {
+        userId: recentOutbound?.userId || 1, // Default to first user if unknown
+        phone: normalizedPhone,
+        name: `Unknown (${normalizedPhone.split("@")[0]})`,
+        team: "Inbound",
+        role: "Guest",
+      },
     });
-    return { ok: true, skipped: true, reason: "unmatched_contact" };
+
+    await writeAudit({
+      level: "info",
+      entityType: "inbound",
+      action: "auto_created_contact",
+      message: `Kontak baru otomatis dibuat untuk ${normalizedPhone}`,
+    });
   }
 
   const inbound = await prisma.inboundMessage.upsert({
