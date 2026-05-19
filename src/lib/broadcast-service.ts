@@ -450,6 +450,7 @@ export async function handleWahaInbound(payload: WahaWebhookPayload) {
   if (fromMe) return { ok: true, skipped: true, reason: "from_me" };
   if (!text) return { ok: true, skipped: true, reason: "empty_text" };
   if (!chatId) return { ok: true, skipped: true, reason: "missing_chat_id" };
+  if (chatId.endsWith("@g.us")) return { ok: true, skipped: true, reason: "group_chat_ignored" };
 
   const normalizedPhone = normalizeWhatsappNumber(chatId);
   if (!normalizedPhone) return { ok: false, error: "Invalid inbound chat id" };
